@@ -67,7 +67,7 @@ store(Record)->
 	end.
 
 %% removes a record from a table identified by  the Id field
--spec remove(atom(),any()) -> any().
+-spec remove(atom(),any()) -> not_found | ok.
 remove(Table,Id) ->
 	case find_by_id(Table,Id)of
 		not_found -> not_found;
