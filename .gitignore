@@ -9,3 +9,4 @@ logs
 variables-ct@Gregors-iMac
 *.d
 ebin
+*.plt
