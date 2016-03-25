@@ -29,7 +29,7 @@
 %%%===================================================================
 
 
-%% find specific records from table
+%% finds specific records from table using a filter function.
 -spec find(atom(),fun()) -> tuple() |  not_found.
 find(Table,Filter)->
 		case do(qlc:q([X || X <- mnesia:table(Table), 
@@ -38,6 +38,7 @@ find(Table,Filter)->
 		Results -> Results
 	end.
 
+%% finds a record by it id from a table
 -spec find_by_id(atom(),any()) -> tuple() |  not_found.
 find_by_id(Table,Id)->
 	case find(Table,id_filter(Id)) of
@@ -45,7 +46,7 @@ find_by_id(Table,Id)->
 		[Result] -> Result
 	end.
 
-%%get all records from database
+%%get all records from a table
 -spec all(atom()) -> tuple() |  no_rows.
 all(Table)->
 	case do(qlc:q([X || X <- mnesia:table(Table)]))  of
@@ -53,6 +54,8 @@ all(Table)->
 		Results -> Results
 	end.
 
+%%create or update a record. First property of
+%%the record will be used as identifier
 -spec store(tuple()) -> ok | tuple().
 store(Record)->
 	Fw = fun() ->
@@ -63,6 +66,7 @@ store(Record)->
 		Val -> Val
 	end.
 
+%% removes a record from a table identified by  the Id field
 -spec remove(atom(),any()) -> any().
 remove(Table,Id) ->
 	case find_by_id(Table,Id)of
@@ -77,12 +81,14 @@ remove(Table,Id) ->
 %%% Internal functions
 %%%===================================================================
 
+%% filter function to search by Id
 id_filter(Id)->
 	fun(R) ->
 		[_,Id2|_]=tuple_to_list(R),
 		Id==Id2
 	end.
 
+%% runs mnesia querys with qlc
 do(Q) ->
 	F = fun() -> qlc:e(Q) end,
 	{atomic, Val}=mnesia:transaction(F),
