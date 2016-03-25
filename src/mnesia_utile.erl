@@ -30,7 +30,7 @@
 
 
 %% finds specific records from table using a filter function.
--spec find(atom(),fun()) -> tuple() |  not_found.
+-spec find(atom(),fun()) -> list() |  not_found.
 find(Table,Filter)->
 		case do(qlc:q([X || X <- mnesia:table(Table), 
 								Filter(X)]))  of
