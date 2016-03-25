@@ -14,11 +14,12 @@
 
 -module(mnesia_utile).
 
--include_lib("stdlib/include/qlc.hrl")
+-include_lib("stdlib/include/qlc.hrl").
 
 -export([find/2]).
 -export([find_by_id/2]).
 -export([all/1]).
+-export([store/1]).
 -export([remove/2]).
 
 
@@ -29,7 +30,7 @@
 
 
 %% find specific records from table
--spec find(atom(),fun()) -> record() |  not_found.
+-spec find(atom(),fun()) -> tuple() |  not_found.
 find(Table,Filter)->
 		case do(qlc:q([X || X <- mnesia:table(Table), 
 								Filter(X)]))  of
@@ -37,9 +38,12 @@ find(Table,Filter)->
 		Results -> Results
 	end.
 
--spec find_by_id(atom(),non_neg_integer()) -> record() |  not_found.
+-spec find_by_id(atom(),any()) -> tuple() |  not_found.
 find_by_id(Table,Id)->
-	find(Table,id_filter(Id)).
+	case find(Table,id_filter(Id)) of
+		not_found -> not_found;
+		[Result] -> Result
+	end.
 
 %%get all records from database
 -spec all(atom()) -> tuple() |  no_rows.
@@ -49,20 +53,21 @@ all(Table)->
 		Results -> Results
 	end.
 
--spec store(atom(), record()) -> tuple().
-store(Table,Record)->
+-spec store(tuple()) -> ok | tuple().
+store(Record)->
 	Fw = fun() ->
 			mnesia:write(Record)
 		end,
-	[Table,Id|_] = tuple_to_list(Record),
-	mnesia:transaction(Fw).
+	case mnesia:transaction(Fw) of
+		{atomic, ok} -> ok;
+		Val -> Val
+	end.
 
--spec remove(atom(),tuple()) -> any().
-remove(Table,Record) ->
-	[Table,Id|_] = tuple_to_list(Record),
-	case find(Table,filterById(Id))of
+-spec remove(atom(),any()) -> any().
+remove(Table,Id) ->
+	case find_by_id(Table,Id)of
 		not_found -> not_found;
-		[Result] -> {atomic, Val} = mnesia:transaction(
+		Result -> {atomic, Val} = mnesia:transaction(
 					fun () -> mnesia:delete_object(Result) end
 					),
 					Val
@@ -80,13 +85,6 @@ id_filter(Id)->
 
 do(Q) ->
 	F = fun() -> qlc:e(Q) end,
-	case mnesia:transaction(F) of
-		{atomic, Val} -> Val;
-		{aborted,{no_exists,_}} -> 
-								create_tables(),
-								do(Q)
-	end. 
-
-
-
-
+	{atomic, Val}=mnesia:transaction(F),
+	Val.
+	
