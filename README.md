@@ -5,7 +5,9 @@ This is a collection of of some mnesia utile functions. It makes standard databa
 
 # installation
 Clone it and just run `make` 
-or 
+
+or
+
 if you want to use it as a dependency in your project add the following toyour Makefile
 
 
